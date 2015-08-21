@@ -1,0 +1,5 @@
+name "aammm"
+description "Associative arrays with manual memory management."
+copyright "Copyright © 2015, AREX European Market Ltd"
+authors "Ilya Yaroshenko"
+license "BSL-1.0"

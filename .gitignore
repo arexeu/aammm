@@ -1,0 +1,11 @@
+.dub
+docs.json
+__dummy.html
+*.o
+*.obj
+
+*.sublime-project
+*.selections.json
+aammm
+
+__test__library__
