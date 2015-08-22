@@ -1,4 +1,0 @@
-name "aammm"
-description "Associative arrays with manual memory management."
-authors "Andrei Alexandrescu (allocators), Martin Nowak (associative arrays), Ilya Yaroshenko (bundle)"
-license "BSL-1.0"
