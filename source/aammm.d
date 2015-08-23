@@ -53,11 +53,36 @@ auto disposeAA(AAAlocator, T : AA!(Key, Val, Allocator), Key, Val, Allocator)(re
 	aa.impl = null;
 }
 
-unittest {
-	import std.experimental.allocator.mallocator;
-	import std.experimental.allocator.gc_allocator;
-	auto aa = makeAA!(int, string)(GCAllocator.instance, Mallocator.instance);
-	GCAllocator.instance.disposeAA(aa);
+Key[] keys(T : AA!(Key, Val, Allocator), Key, Val, Allocator)(T aa)
+{
+	if(aa.empty)
+		return null;
+	auto ret = new typeof(return)(aa.length);
+	size_t i;
+    foreach (ref b; aa.buckets)
+    {
+        if (!b.filled)
+            continue;
+       	ret[i++] = b.entry.key;
+    }
+    assert(i == aa.length);
+    return ret;
+}
+
+Val[] values(T : AA!(Key, Val, Allocator), Key, Val, Allocator)(T aa)
+{
+	if(aa.empty)
+		return null;
+	auto ret = new typeof(return)(aa.length);
+	size_t i;
+    foreach (ref b; aa.buckets)
+    {
+        if (!b.filled)
+            continue;
+       	ret[i++] = b.entry.val;
+    }
+    assert(i == aa.length);
+    return ret;
 }
 
 /++
