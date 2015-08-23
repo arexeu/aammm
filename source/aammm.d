@@ -42,7 +42,7 @@ auto makeAA(Key, Val, AAAlocator, Allocator)(ref AAAlocator aaalocator, ref Allo
 	import std.experimental.allocator: make;
 	alias T = AA!(Key, Val, Allocator);
 	T aa = void;
-	aa.impl = aaalocator.make!(T.Impl);
+	aa.impl = aaalocator.make!(T.Impl)(allocator, sz);
 	return aa;
 }
 
@@ -225,7 +225,6 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         return p.entry.val;
     }
 
-
 	/// foreach opApply over all values
 	int opApply(int delegate(Val) dg)
 	{
@@ -247,8 +246,7 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
 	{
 	    if (empty)
 	        return 0;
-
-	    foreach (b; buckets)
+	    foreach (ref b; buckets)
 	    {
 	        if (!b.filled)
 	            continue;
@@ -496,8 +494,8 @@ private:
 unittest
 {
 	import std.experimental.allocator.mallocator;
-    auto aa = AA!(int, int)(GCAllocator.instance);
-    auto bb = AA!(int, int, shared Mallocator)(Mallocator.instance);
+    //auto aa = AA!(int, int)(GCAllocator.instance);
+    auto aa = AA!(int, int, shared Mallocator)(Mallocator.instance);
     assert(aa.length == 0);
     aa[0] = 1;
     assert(aa.length == 1 && aa[0] == 1);
