@@ -89,7 +89,6 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         //    impl = new Impl(INIT_NUM_BUCKETS);
 
         // get hash and bucket for key
-        immutable hash = hashOf(key);
         immutable hash = hashOf(key) | HASH_FILLED_MARK;
 
         // found a value => assignment
@@ -129,7 +128,6 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         if (empty)
             return null;
 
-        immutable hash = hashOf(key);
         immutable hash = hashOf(key) | HASH_FILLED_MARK;
         if (auto p = findSlotLookup(hash, key))
             return &p.entry.val;
@@ -141,7 +139,6 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         if (empty)
             return false;
 
-        immutable hash = hashOf(key);
         immutable hash = hashOf(key) | HASH_FILLED_MARK;
         if (auto p = findSlotLookup(hash, key))
         {
@@ -171,7 +168,6 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         //    impl = new Impl(INIT_NUM_BUCKETS);
 
         // get hash and bucket for key
-        immutable hash = hashOf(key);
         immutable hash = hashOf(key) | HASH_FILLED_MARK;
 
         // found a value => assignment
@@ -251,7 +247,6 @@ private:
         //    impl = new Impl(INIT_NUM_BUCKETS);
 
         // get hash and bucket for key
-        immutable hash = hashOf(key);
         immutable hash = hashOf(key) | HASH_FILLED_MARK;
 
         // found a value => assignment
