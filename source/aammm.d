@@ -114,6 +114,84 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
 	    return ret;
 	}
 
+	auto byKey()
+	{
+		struct ByKey
+		{
+			Range range;
+			alias range this;
+
+			Key front() @property
+			{
+				return range.front.key;
+			}
+		}
+		return ByKey(Range(this));
+	}
+
+	auto byValue()
+	{
+		struct ByValue
+		{
+			Range range;
+			alias range this;
+
+			ref Val front() @property
+			{
+				return range.front.val;
+			}
+		}
+		return ByValue(Range(this));
+	}
+
+	auto byKeyValue()
+	{
+		struct ByKeyValue
+		{
+			Range range;
+			alias range this;
+
+			import std.typecons: Tuple;
+			Tuple!(Key, "key", Val, "value") front() @property
+			{
+				return typeof(return)(range.front.key, range.front.val);
+			}
+		}
+		return ByKeyValue(Range(this));
+	}
+
+	private struct Range
+	{
+		Impl* impl;
+		size_t idx;
+
+		size_t length() @property
+		{
+			return impl is null ? 0 : impl.length - idx;
+		}
+		
+		bool empty() @property
+		{
+			return length == 0;
+		}
+
+		ref Impl.Entry front() @property
+		{
+			assert(!empty);
+			return *impl.buckets[idx].entry;
+		}
+
+		void popFront()
+		{
+			assert(!empty);
+	        for (++idx; idx < impl.buckets.length; ++idx)
+	        {
+	            if (impl.buckets[idx].filled)
+	                break;
+	        }
+		}
+	}
+
     void opIndexAssign(Val val, in Key key)
     {
         // lazily alloc implementation
