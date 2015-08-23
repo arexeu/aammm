@@ -192,6 +192,35 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         }
     }
 
+    bool opEquals(in AA aa)
+    {
+        if (this.impl is aa.impl)
+            return true;
+
+        immutable len = length;
+        if (len != aa.length)
+            return false;
+
+        if (!len) // both empty
+            return true;
+
+        // compare the entries
+        foreach(b1; this.buckets)
+        {
+            if (!b1.filled)
+                continue;
+            auto pb2 = aa.findSlotLookup(b1.hash, b1.entry.key);
+            if (pb2 is null || pb2.entry.val == b1.entry.val)
+                return false;
+        }
+        return true;
+    }
+
+    bool opEquals(typeof(null))
+    {
+        return empty;
+    }
+
     void opIndexAssign(Val val, in Key key)
     {
         // lazily alloc implementation
