@@ -53,46 +53,6 @@ auto disposeAA(AAAlocator, T : AA!(Key, Val, Allocator), Key, Val, Allocator)(re
 	aa.impl = null;
 }
 
-Key[] keys(T : AA!(Key, Val, Allocator), Key, Val, Allocator)(T aa)
-{
-	if(aa.empty)
-		return null;
-	auto ret = new typeof(return)(aa.length);
-	size_t i;
-    foreach (ref b; aa.buckets)
-    {
-        if (!b.filled)
-            continue;
-       	ret[i++] = b.entry.key;
-    }
-    assert(i == aa.length);
-    return ret;
-}
-
-Val[] values(T : AA!(Key, Val, Allocator), Key, Val, Allocator)(T aa)
-{
-	if(aa.empty)
-		return null;
-	auto ret = new typeof(return)(aa.length);
-	size_t i;
-    foreach (ref b; aa.buckets)
-    {
-        if (!b.filled)
-            continue;
-       	ret[i++] = b.entry.val;
-    }
-    assert(i == aa.length);
-    return ret;
-}
-
-/// Rehash AA
-T rehash(T : AA!(Key, Val, Allocator), Key, Val, Allocator)(T aa)
-{
-    if (!aa.empty)
-        aa.resize(nextpow2(INIT_DEN * aa.length / INIT_NUM));
-    return aa;
-}
-
 /++
 +/
 struct AA(Key, Val, Allocator = shared GCAllocator)
@@ -114,6 +74,45 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
     {
         return impl is null ? 0 : impl.length;
     }
+
+	typeof(this) rehash()
+	{
+	    if (!empty)
+	        resize(nextpow2(INIT_DEN * buckets.length / INIT_NUM));
+	    return this;
+	}
+
+	Key[] keys() @property
+	{
+		if(empty)
+			return null;
+		auto ret = new typeof(return)(length);
+		size_t i;
+	    foreach (ref b; buckets)
+	    {
+	        if (!b.filled)
+	            continue;
+	       	ret[i++] = b.entry.key;
+	    }
+	    assert(i == length);
+	    return ret;
+	}
+
+	Val[] values() @property
+	{
+		if(empty)
+			return null;
+		auto ret = new typeof(return)(length);
+		size_t i;
+	    foreach (ref b; buckets)
+	    {
+	        if (!b.filled)
+	            continue;
+	       	ret[i++] = b.entry.val;
+	    }
+	    assert(i == length);
+	    return ret;
+	}
 
     void opIndexAssign(Val val, in Key key)
     {
