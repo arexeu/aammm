@@ -85,6 +85,14 @@ Val[] values(T : AA!(Key, Val, Allocator), Key, Val, Allocator)(T aa)
     return ret;
 }
 
+/// Rehash AA
+T rehash(T : AA!(Key, Val, Allocator), Key, Val, Allocator)(T aa)
+{
+    if (!aa.empty)
+        aa.resize(nextpow2(INIT_DEN * aa.length / INIT_NUM));
+    return aa;
+}
+
 /++
 +/
 struct AA(Key, Val, Allocator = shared GCAllocator)
