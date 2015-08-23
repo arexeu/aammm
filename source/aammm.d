@@ -192,6 +192,39 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         return p.entry.val;
     }
 
+
+	/// foreach opApply over all values
+	int opApply(int delegate(Val) dg)
+	{
+	    if (empty)
+	        return 0;
+
+	    foreach (ref b; buckets)
+	    {
+	        if (!b.filled)
+	            continue;
+	        if (auto res = dg(b.entry.val))
+	            return res;
+	    }
+	    return 0;
+	}
+
+	/// foreach opApply over all key/value pairs
+	int opApply(int delegate(Key, Val) dg)
+	{
+	    if (empty)
+	        return 0;
+
+	    foreach (b; buckets)
+	    {
+	        if (!b.filled)
+	            continue;
+	        if (auto res = dg(b.entry.key, b.entry.val))
+	            return res;
+	    }
+	    return 0;
+	}
+
     ///**
     //   Convert the AA to the type of the builtin language AA.
     // */
