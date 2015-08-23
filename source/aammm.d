@@ -283,6 +283,7 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         {
             // clear entry
             p.hash = HASH_DELETED;
+            allocator.dispose(p.entry);
             p.entry = null;
 
             ++deleted;
@@ -293,6 +294,8 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         }
         return false;
     }
+
+    ref Allocator allocator() pure nothrow @nogc { return impl.allocator; }
 
     Val get(in Key key, lazy Val val)
     {
@@ -432,6 +435,9 @@ private:
 
         ~this()
         {
+            foreach(b; buckets)
+                if(b.filled)
+                    allocator.dispose(b.entry);
             allocator.dispose(buckets);
         }
 
