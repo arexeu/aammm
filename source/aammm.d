@@ -39,26 +39,26 @@ enum INIT_NUM_BUCKETS = 8;
 
 auto makeAA(Key, Val, AAAlocator, Allocator)(ref AAAlocator aaalocator, ref Allocator allocator, size_t sz = INIT_NUM_BUCKETS)
 {
-	import std.experimental.allocator: make;
-	alias T = AA!(Key, Val, Allocator);
-	T aa = void;
-	aa.impl = aaalocator.make!(T.Impl)(allocator, sz);
-	return aa;
+    import std.experimental.allocator: make;
+    alias T = AA!(Key, Val, Allocator);
+    T aa = void;
+    aa.impl = aaalocator.make!(T.Impl)(allocator, sz);
+    return aa;
 }
 
 auto disposeAA(AAAlocator, T : AA!(Key, Val, Allocator), Key, Val, Allocator)(ref AAAlocator aaalocator, auto ref T aa)
 {
-	import std.experimental.allocator: dispose;
-	aaalocator.dispose(aa.impl);
-	aa.impl = null;
+    import std.experimental.allocator: dispose;
+    aaalocator.dispose(aa.impl);
+    aa.impl = null;
 }
 
 /++
 +/
 struct AA(Key, Val, Allocator = shared GCAllocator)
 {
-	import std.experimental.allocator: make, makeArray, dispose;
-	@disable this();
+    import std.experimental.allocator: make, makeArray, dispose;
+    @disable this();
 
     this(ref Allocator allocator, size_t sz = INIT_NUM_BUCKETS)
     {
@@ -75,122 +75,122 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         return impl is null ? 0 : impl.length;
     }
 
-	typeof(this) rehash()
-	{
-	    if (!empty)
-	        resize(nextpow2(INIT_DEN * buckets.length / INIT_NUM));
-	    return this;
-	}
+    typeof(this) rehash()
+    {
+        if (!empty)
+            resize(nextpow2(INIT_DEN * buckets.length / INIT_NUM));
+        return this;
+    }
 
-	Key[] keys() @property
-	{
-		if(empty)
-			return null;
-		auto ret = new typeof(return)(length);
-		size_t i;
-	    foreach (ref b; buckets)
-	    {
-	        if (!b.filled)
-	            continue;
-	       	ret[i++] = b.entry.key;
-	    }
-	    assert(i == length);
-	    return ret;
-	}
+    Key[] keys() @property
+    {
+        if(empty)
+            return null;
+        auto ret = new typeof(return)(length);
+        size_t i;
+        foreach (ref b; buckets)
+        {
+            if (!b.filled)
+                continue;
+            ret[i++] = b.entry.key;
+        }
+        assert(i == length);
+        return ret;
+    }
 
-	Val[] values() @property
-	{
-		if(empty)
-			return null;
-		auto ret = new typeof(return)(length);
-		size_t i;
-	    foreach (ref b; buckets)
-	    {
-	        if (!b.filled)
-	            continue;
-	       	ret[i++] = b.entry.val;
-	    }
-	    assert(i == length);
-	    return ret;
-	}
+    Val[] values() @property
+    {
+        if(empty)
+            return null;
+        auto ret = new typeof(return)(length);
+        size_t i;
+        foreach (ref b; buckets)
+        {
+            if (!b.filled)
+                continue;
+            ret[i++] = b.entry.val;
+        }
+        assert(i == length);
+        return ret;
+    }
 
-	auto byKey()
-	{
-		struct ByKey
-		{
-			Range range;
-			alias range this;
+    auto byKey()
+    {
+        struct ByKey
+        {
+            Range range;
+            alias range this;
 
-			Key front() @property
-			{
-				return range.front.key;
-			}
-		}
-		return ByKey(Range(this));
-	}
+            Key front() @property
+            {
+                return range.front.key;
+            }
+        }
+        return ByKey(Range(this));
+    }
 
-	auto byValue()
-	{
-		struct ByValue
-		{
-			Range range;
-			alias range this;
+    auto byValue()
+    {
+        struct ByValue
+        {
+            Range range;
+            alias range this;
 
-			ref Val front() @property
-			{
-				return range.front.val;
-			}
-		}
-		return ByValue(Range(this));
-	}
+            ref Val front() @property
+            {
+                return range.front.val;
+            }
+        }
+        return ByValue(Range(this));
+    }
 
-	auto byKeyValue()
-	{
-		struct ByKeyValue
-		{
-			Range range;
-			alias range this;
+    auto byKeyValue()
+    {
+        struct ByKeyValue
+        {
+            Range range;
+            alias range this;
 
-			import std.typecons: Tuple;
-			Tuple!(Key, "key", Val, "value") front() @property
-			{
-				return typeof(return)(range.front.key, range.front.val);
-			}
-		}
-		return ByKeyValue(Range(this));
-	}
+            import std.typecons: Tuple;
+            Tuple!(Key, "key", Val, "value") front() @property
+            {
+                return typeof(return)(range.front.key, range.front.val);
+            }
+        }
+        return ByKeyValue(Range(this));
+    }
 
-	private struct Range
-	{
-		Impl* impl;
-		size_t idx;
+    private struct Range
+    {
+        Impl* impl;
+        size_t idx;
 
-		size_t length() @property
-		{
-			return impl is null ? 0 : impl.length - idx;
-		}
-		
-		bool empty() @property
-		{
-			return length == 0;
-		}
+        size_t length() @property
+        {
+            return impl is null ? 0 : impl.length - idx;
+        }
+        
+        bool empty() @property
+        {
+            return length == 0;
+        }
 
-		ref Impl.Entry front() @property
-		{
-			assert(!empty);
-			return *impl.buckets[idx].entry;
-		}
+        ref Impl.Entry front() @property
+        {
+            assert(!empty);
+            return *impl.buckets[idx].entry;
+        }
 
-		void popFront()
-		{
-			assert(!empty);
-	        for (++idx; idx < impl.buckets.length; ++idx)
-	        {
-	            if (impl.buckets[idx].filled)
-	                break;
-	        }
-		}
-	}
+        void popFront()
+        {
+            assert(!empty);
+            for (++idx; idx < impl.buckets.length; ++idx)
+            {
+                if (impl.buckets[idx].filled)
+                    break;
+            }
+        }
+    }
 
     void opIndexAssign(Val val, in Key key)
     {
@@ -302,36 +302,36 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         return p.entry.val;
     }
 
-	/// foreach opApply over all values
-	int opApply(int delegate(Val) dg)
-	{
-	    if (empty)
-	        return 0;
+    /// foreach opApply over all values
+    int opApply(int delegate(Val) dg)
+    {
+        if (empty)
+            return 0;
 
-	    foreach (ref b; buckets)
-	    {
-	        if (!b.filled)
-	            continue;
-	        if (auto res = dg(b.entry.val))
-	            return res;
-	    }
-	    return 0;
-	}
+        foreach (ref b; buckets)
+        {
+            if (!b.filled)
+                continue;
+            if (auto res = dg(b.entry.val))
+                return res;
+        }
+        return 0;
+    }
 
-	/// foreach opApply over all key/value pairs
-	int opApply(int delegate(Key, Val) dg)
-	{
-	    if (empty)
-	        return 0;
-	    foreach (ref b; buckets)
-	    {
-	        if (!b.filled)
-	            continue;
-	        if (auto res = dg(b.entry.key, b.entry.val))
-	            return res;
-	    }
-	    return 0;
-	}
+    /// foreach opApply over all key/value pairs
+    int opApply(int delegate(Key, ref Val) dg)
+    {
+        if (empty)
+            return 0;
+        foreach (ref b; buckets)
+        {
+            if (!b.filled)
+                continue;
+            if (auto res = dg(b.entry.key, b.entry.val))
+                return res;
+        }
+        return 0;
+    }
 
     ///**
     //   Convert the AA to the type of the builtin language AA.
@@ -381,30 +381,30 @@ private:
 
     static struct Impl
     {
-		static if(is(Allocator == struct))
-		{
-		    Allocator* _allocator;
-		    ref Allocator allocator() pure nothrow @nogc { return *_allocator; }
-		    this(ref Allocator allocator, size_t sz = INIT_NUM_BUCKETS)
-		    {
-		        this._allocator = &allocator;
-		        buckets = allocBuckets(sz);
-		    }
-		}
-		else
-		{
-		    Allocator allocator;
-		    this(Allocator allocator, size_t sz = INIT_NUM_BUCKETS)
-		    {
-		        this.allocator = allocator;
-		        buckets = allocBuckets(sz);
-		    }
-		}
+        static if(is(Allocator == struct))
+        {
+            Allocator* _allocator;
+            ref Allocator allocator() pure nothrow @nogc { return *_allocator; }
+            this(ref Allocator allocator, size_t sz = INIT_NUM_BUCKETS)
+            {
+                this._allocator = &allocator;
+                buckets = allocBuckets(sz);
+            }
+        }
+        else
+        {
+            Allocator allocator;
+            this(Allocator allocator, size_t sz = INIT_NUM_BUCKETS)
+            {
+                this.allocator = allocator;
+                buckets = allocBuckets(sz);
+            }
+        }
 
-	    ~this()
-	    {
-    		allocator.dispose(buckets);
-	    }
+        ~this()
+        {
+            allocator.dispose(buckets);
+        }
 
         @property size_t length() const pure nothrow @nogc
         {
@@ -570,7 +570,7 @@ private:
 
 unittest
 {
-	import std.experimental.allocator.mallocator;
+    import std.experimental.allocator.mallocator;
     //auto aa = AA!(int, int)(GCAllocator.instance);
     auto aa = AA!(int, int, shared Mallocator)(Mallocator.instance);
     assert(aa.length == 0);
