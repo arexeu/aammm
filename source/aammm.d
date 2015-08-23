@@ -318,6 +318,11 @@ private:
 		    }
 		}
 
+	    ~this()
+	    {
+    		allocator.dispose(buckets);
+	    }
+
         @property size_t length() const pure nothrow @nogc
         {
             assert(used >= deleted);
