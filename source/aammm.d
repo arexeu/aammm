@@ -520,37 +520,6 @@ private:
         this.impl = impl;
     }
 
-    ref Val getLValue(scope Key key)
-    {
-        // lazily alloc implementation
-        //if (impl is null)
-        //    impl = new Impl(INIT_NUM_BUCKETS);
-
-        // get hash and bucket for key
-        immutable hash = calcHash(key);
-
-        // found a value => assignment
-        if (auto p = impl.findSlotLookup(hash, key))
-            return p.entry.val;
-
-        auto p = findSlotInsert(hash);
-        if (p.deleted)
-            --deleted;
-        // check load factor and possibly grow
-        else if (++used * GROW_DEN > dim * GROW_NUM)
-        {
-            grow();
-            p = findSlotInsert(hash);
-            assert(p.empty);
-        }
-
-        // update search cache and allocate entry
-        firstUsed = min(firstUsed, cast(size_t)(p - buckets.ptr));
-        p.hash = hash;
-        p.entry = allocator.make!(Impl.Entry)(key); // TODO: move
-        return p.entry.val;
-    }
-
     static struct Impl
     {
         static if(is(Allocator == struct))
@@ -692,38 +661,6 @@ private:
         size_t deleted;
         size_t firstUsed;
     }
-
-    //RTInterface* rtInterface()() pure nothrow @nogc
-    //{
-    //    static size_t aaLen(in void* pimpl) pure nothrow @nogc
-    //    {
-    //        auto aa = const(AA)(cast(const(Impl)*)pimpl);
-    //        return aa.length;
-    //    }
-
-    //    static void* aaGetY(void** pimpl, in void* pkey)
-    //    {
-    //        auto aa = AA(cast(Impl*)*pimpl);
-    //        auto res = &aa.getLValue(*cast(const(Key*)) pkey);
-    //        *pimpl = aa.impl; // might have changed
-    //        return res;
-    //    }
-
-    //    static inout(void)* aaInX(inout void* pimpl, in void* pkey)
-    //    {
-    //        auto aa = inout(AA)(cast(inout(Impl)*)pimpl);
-    //        return aa.opIn_r(*cast(const(Key*)) pkey);
-    //    }
-
-    //    static bool aaDelX(void* pimpl, in void* pkey)
-    //    {
-    //        auto aa = AA(cast(Impl*)pimpl);
-    //        return aa.remove(*cast(const(Key*)) pkey);
-    //    }
-
-    //    static immutable vtbl = RTInterface(&aaLen, &aaGetY, &aaInX, &aaDelX);
-    //    return cast(RTInterface*)&vtbl;
-    //}
 
     Impl* impl;
     alias impl this;
