@@ -2,6 +2,9 @@
 # aammm
 Associative arrays with manual memory management
 
+All enries and buckets would be dealocated and disposed by internal implementation's destructor.
+The destructor is called by garbage collector (by default).
+
 #### Example
 ```D
     //std.experimental.allocator is included into `aammm`
