@@ -37,6 +37,10 @@ private
 enum INIT_NUM_BUCKETS = 8;
 
 
+/++
+Allocates internal AA implementation using `aaalocator`.
+Do not use it if you want the GC to remove internal pointer automatically.
++/
 auto makeAA(Key, Val, AAAlocator, Allocator)(ref AAAlocator aaalocator, ref Allocator allocator, size_t sz = INIT_NUM_BUCKETS)
 {
     import std.experimental.allocator: make;
@@ -46,6 +50,9 @@ auto makeAA(Key, Val, AAAlocator, Allocator)(ref AAAlocator aaalocator, ref Allo
     return aa;
 }
 
+/++
+Disposes internal AA implementation using `aaalocator`.
++/
 auto disposeAA(AAAlocator, T : AA!(Key, Val, Allocator), Key, Val, Allocator)(ref AAAlocator aaalocator, auto ref T aa)
 {
     import std.experimental.allocator: dispose;
@@ -54,6 +61,12 @@ auto disposeAA(AAAlocator, T : AA!(Key, Val, Allocator), Key, Val, Allocator)(re
 }
 
 /++
+Params:
+    Key = key type
+    Val = value type
+    Allocator = allocator type
+
+See_also: `std.experimental.allocator.typed`
 +/
 struct AA(Key, Val, Allocator = shared GCAllocator)
 {
