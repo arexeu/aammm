@@ -487,13 +487,18 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         return 0;
     }
 
-    ///**
-    //   Convert the AA to the type of the builtin language AA.
-    // */
-    //Val[Key] toBuiltinAA() pure nothrow
-    //{
-    //    return cast(Val[Key]) _aaFromCoreAA(impl, rtInterface);
-    //}
+    /**
+       Convert the AA to the type of the builtin language AA.
+     */
+    Val[Key] toBuiltinAA() pure nothrow
+    {
+        Val[Key] ret;
+        foreach(key, value; byKeyValue())
+        {
+            ret[key] = value;
+        }
+        return ret;
+    }
 
 private:
 
