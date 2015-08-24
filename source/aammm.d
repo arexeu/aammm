@@ -269,11 +269,30 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         }
     }
 
-    bool opEquals(in AA aa)
+    size_t toHash() const
+    {
+        if (empty)
+            return 0;
+
+        size_t h;
+        foreach (b; buckets)
+        {
+            if (!b.filled)
+                continue;
+            static if(is(Key : AA!(K, V, A), K, V, A)) //object.d workaround
+                size_t[2] h2 = [b.hash, b.entry.key.toHash];
+            else
+                size_t[2] h2 = [b.hash, hashOf(b.entry.key)];
+            // use XOR here, so that hash is independent of element order
+            h ^= hashOf(h2.ptr, h2.length * h2[0].sizeof);
+        }
+        return h;
+    }
+
+    bool opEquals(in AA aa) const
     {
         if (this.impl is aa.impl)
             return true;
-
         immutable len = length;
         if (len != aa.length)
             return false;
@@ -287,7 +306,7 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
             if (!b1.filled)
                 continue;
             auto pb2 = aa.findSlotLookup(b1.hash, b1.entry.key);
-            if (pb2 is null || pb2.entry.val == b1.entry.val)
+            if (pb2 is null || pb2.entry.val != b1.entry.val)
                 return false;
         }
         return true;
