@@ -10,6 +10,6 @@ Associative arrays with manual memory management
 
     auto a = AA!(string, int, shared Mallocator)(Mallocator.instance);
     a["foo"] = 0;
-    a.remove("foo"); //dealocates and dispose entry
+    a.remove("foo"); //dealocates and disposes the entry
     assert(a == null); // should not crash
 ```
