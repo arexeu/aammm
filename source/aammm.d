@@ -317,7 +317,30 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         return empty;
     }
 
-    void opIndexAssign(Val val, in Key key)
+    void toString(scope void delegate(const(char)[]) sink) const
+    {
+        sink("[");
+        auto range = byKeyValue();
+        if(!range.empty)
+        {
+            import std.format: formatElement, FormatSpec;
+            FormatSpec!char fmt;
+            sink.formatElement(range.front.key, fmt);
+            sink(" : ");
+            sink.formatElement(range.front.value, fmt);
+            range.popFront;
+            foreach(elem; range)
+            {
+                sink(", ");
+                sink.formatElement(range.front.key, fmt);
+                sink(" : ");
+                sink.formatElement(range.front.value, fmt);
+            }
+        }
+        sink("]");
+    }
+
+    void opIndexAssign(Val val, scope Key key)
     {
         // lazily alloc implementation
         //if (impl is null)
