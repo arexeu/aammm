@@ -1,6 +1,6 @@
 {
 	"name": "aammm",
 	"description": "Associative arrays with new std experimental allocators.",
-	"authors": ["Andrei Alexandrescu (allocators)", "Martin Nowak (associative arrays)", "Ilya Yaroshenko (bundle)"],
+	"authors": ["Andrei Alexandrescu (allocators)", "Martin Nowak (associative arrays)", "Ilya Yaroshenko (bundle, associative arrays)"],
 	"license": "BSL-1.0"
 }
