@@ -71,7 +71,7 @@ See_also: `std.experimental.allocator.typed`
 struct AA(Key, Val, Allocator = shared GCAllocator)
 {
     import std.experimental.allocator: make, makeArray, dispose;
-    @disable this();
+    //@disable this();
 
     this(ref Allocator allocator, size_t sz = INIT_NUM_BUCKETS)
     {
@@ -127,11 +127,28 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         return ret;
     }
 
-    auto byKey()
+    auto byKey() const
     {
+        alias R = Range!(const Impl);
         struct ByKey
         {
-            Range range;
+            R range;
+            alias range this;
+
+            const(Key) front() @property
+            {
+                return range.front.key;
+            }
+        }
+        return ByKey(R(this.impl));
+    }
+
+    auto byKey()
+    {
+        alias R = Range!Impl;
+        struct ByKey
+        {
+            R range;
             alias range this;
 
             Key front() @property
@@ -139,14 +156,31 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
                 return range.front.key;
             }
         }
-        return ByKey(Range(this));
+        return ByKey(R(this.impl));
+    }
+
+    auto byValue() const
+    {
+        alias R = Range!(const Impl);
+        struct ByValue
+        {
+            R range;
+            alias range this;
+
+            ref const(Val) front() @property
+            {
+                return range.front.val;
+            }
+        }
+        return ByValue(R(this.impl));
     }
 
     auto byValue()
     {
+        alias R = Range!Impl;
         struct ByValue
         {
-            Range range;
+            R range;
             alias range this;
 
             ref Val front() @property
@@ -154,14 +188,32 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
                 return range.front.val;
             }
         }
-        return ByValue(Range(this));
+        return ByValue(R(this.impl));
     }
 
-    auto byKeyValue()
+    auto byKeyValue() const
     {
+        alias R = Range!(const Impl);
         struct ByKeyValue
         {
-            Range range;
+            R range;
+            alias range this;
+
+            import std.typecons: Tuple;
+            Tuple!(const Key, "key", const Val, "value") front() @property
+            {
+                return typeof(return)(range.front.key, range.front.val);
+            }
+        }
+        return ByKeyValue(R(this.impl));
+    }
+
+    auto byKeyValue() 
+    {
+        alias R = Range!Impl;
+        struct ByKeyValue
+        {
+            R range;
             alias range this;
 
             import std.typecons: Tuple;
@@ -170,25 +222,37 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
                 return typeof(return)(range.front.key, range.front.val);
             }
         }
-        return ByKeyValue(Range(this));
+        return ByKeyValue(R(this.impl));
     }
 
-    private struct Range
+    private struct Range(Impl)
     {
         Impl* impl;
         size_t idx;
 
-        size_t length() @property
+        this(Impl* _impl)
         {
-            return impl is null ? 0 : impl.length - idx;
+            impl = _impl;
+            if(impl !is null)
+            {
+                if(impl.length)
+                {
+                    while(!impl.buckets[idx].filled)
+                        ++idx;
+                }
+                else
+                {
+                    idx = impl.buckets.length;
+                }
+            }
         }
         
         bool empty() @property
         {
-            return length == 0;
+            return impl is null ? true : impl.buckets.length <= idx;
         }
 
-        ref Impl.Entry front() @property
+        auto ref front() @property
         {
             assert(!empty);
             return *impl.buckets[idx].entry;
