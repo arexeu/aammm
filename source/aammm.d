@@ -500,6 +500,19 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         return ret;
     }
 
+    /++
+    Creates `AA` from builtin associative array.
+    +/
+    static AA fromBuiltinAA(T : V[K], V, K)(T baa, Allocator allocator, size_t sz = INIT_NUM_BUCKETS)
+    {
+        auto ret = AA(allocator, sz);
+        foreach(key, value; baa)
+        {
+            ret[key] = value;
+        }
+        return ret;
+    }
+
 private:
 
     private this(inout(Impl)* impl) inout
