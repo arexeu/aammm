@@ -347,7 +347,7 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         //    impl = new Impl(INIT_NUM_BUCKETS);
 
         // get hash and bucket for key
-        immutable hash = hashOf(key) | HASH_FILLED_MARK;
+        immutable hash = calcHash(key);
 
         // found a value => assignment
         if (auto p = impl.findSlotLookup(hash, key))
@@ -377,7 +377,7 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
     ref inout(Val) opIndex(in Key key) inout @trusted
     {
         auto p = opIn_r(key);
-        assert(p !is null);
+        assert(p !is null, (typeof(this)).stringof);
         return *p;
     }
 
@@ -386,7 +386,7 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         if (empty)
             return null;
 
-        immutable hash = hashOf(key) | HASH_FILLED_MARK;
+        immutable hash = calcHash(key);
         if (auto p = findSlotLookup(hash, key))
             return &p.entry.val;
         return null;
@@ -397,7 +397,7 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         if (empty)
             return false;
 
-        immutable hash = hashOf(key) | HASH_FILLED_MARK;
+        immutable hash = calcHash(key);
         if (auto p = findSlotLookup(hash, key))
         {
             // clear entry
@@ -506,7 +506,7 @@ private:
         //    impl = new Impl(INIT_NUM_BUCKETS);
 
         // get hash and bucket for key
-        immutable hash = hashOf(key) | HASH_FILLED_MARK;
+        immutable hash = calcHash(key);
 
         // found a value => assignment
         if (auto p = impl.findSlotLookup(hash, key))
@@ -707,6 +707,28 @@ private:
     Impl* impl;
     alias impl this;
 }
+
+private size_t mix(size_t h) @safe pure nothrow @nogc
+{
+    // final mix function of MurmurHash2
+    enum m = 0x5bd1e995;
+    h ^= h >> 13;
+    h *= m;
+    h ^= h >> 15;
+    return h;
+}
+
+private size_t calcHash(Key)(auto ref Key key)
+{
+
+    static if(is(Key : AA!(K, V, A), K, V, A)) //object.d workaround
+        immutable hash = key.toHash();
+    else
+        immutable hash = hashOf(key);
+    // highest bit is set to distinguish empty/deleted from filled buckets
+    return mix(hash) | HASH_FILLED_MARK;
+}
+
 
 //package extern (C) void* _aaFromCoreAA(void* impl, RTInterface* rtIntf) pure nothrow;
 
