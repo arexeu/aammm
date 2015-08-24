@@ -392,6 +392,9 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         return null;
     }
 
+    /++
+    Removes entry from table and disposes it.
+    +/
     bool remove(in Key key)
     {
         if (empty)
@@ -422,14 +425,14 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         return p is null ? val : *p;
     }
 
-    ref Val getOrSet(in Key key, lazy Val val)
+    ref Val getOrSet(scope Key key, lazy Val val)
     {
         // lazily alloc implementation
         //if (impl is null)
         //    impl = new Impl(INIT_NUM_BUCKETS);
 
         // get hash and bucket for key
-        immutable hash = hashOf(key) | HASH_FILLED_MARK;
+        immutable hash = calcHash(key);
 
         // found a value => assignment
         if (auto p = impl.findSlotLookup(hash, key))
@@ -499,7 +502,7 @@ private:
         this.impl = impl;
     }
 
-    ref Val getLValue(in Key key)
+    ref Val getLValue(scope Key key)
     {
         // lazily alloc implementation
         //if (impl is null)
@@ -754,7 +757,6 @@ unittest
     assert(aa.length == 1 && aa[0] == 1);
     aa[1] = 2;
     assert(aa.length == 2 && aa[1] == 2);
-    import core.stdc.stdio;
 
     //int[int] rtaa = aa.toBuiltinAA();
     //assert(rtaa.length == 2);
