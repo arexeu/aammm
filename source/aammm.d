@@ -490,7 +490,7 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
     /**
        Convert the AA to the type of the builtin language AA.
      */
-    Val[Key] toBuiltinAA() pure nothrow
+    Val[Key] toBuiltinAA()
     {
         Val[Key] ret;
         foreach(key, value; byKeyValue())
@@ -676,7 +676,7 @@ private size_t mix(size_t h) @safe pure nothrow @nogc
     return h;
 }
 
-private size_t calcHash(Key)(auto ref Key key)
+private size_t calcHash(Key)(const ref Key key)
 {
 
     static if(is(Key : AA!(K, V, A), K, V, A)) //object.d workaround
@@ -686,21 +686,6 @@ private size_t calcHash(Key)(auto ref Key key)
     // highest bit is set to distinguish empty/deleted from filled buckets
     return mix(hash) | HASH_FILLED_MARK;
 }
-
-
-//package extern (C) void* _aaFromCoreAA(void* impl, RTInterface* rtIntf) pure nothrow;
-
-private:
-
-//struct RTInterface
-//{
-//    alias AA = void*;
-
-//    size_t function(in AA aa) pure nothrow @nogc len;
-//    void* function(AA* aa, in void* pkey) getY;
-//    inout(void)* function(inout AA aa, in void* pkey) inX;
-//    bool function(AA aa, in void* pkey) delX;
-//}
 
 unittest
 {
@@ -713,27 +698,32 @@ unittest
     aa[1] = 2;
     assert(aa.length == 2 && aa[1] == 2);
 
-    //int[int] rtaa = aa.toBuiltinAA();
-    //assert(rtaa.length == 2);
-    //puts("length");
-    //assert(rtaa[0] == 1);
-    //assert(rtaa[1] == 2);
-    //rtaa[2] = 3;
+    int[int] rtaa = aa.toBuiltinAA();
+    assert(rtaa.length == 2);
+    assert(rtaa[0] == 1);
+    assert(rtaa[1] == 2);
+    rtaa[2] = 3;
 
     //assert(aa[2] == 3);
 }
 
+unittest {
+    import std.experimental.allocator.mallocator;
+    import std.experimental.allocator.gc_allocator;
+    auto aa = makeAA!(int, string)(GCAllocator.instance, Mallocator.instance);
+    GCAllocator.instance.disposeAA(aa);
+}
 
 //==============================================================================
 // Helper functions
 //------------------------------------------------------------------------------
 
-T min(T)(T a, T b) pure nothrow @nogc
+private T min(T)(T a, T b) pure nothrow @nogc
 {
     return a < b ? a : b;
 }
 
-T max(T)(T a, T b) pure nothrow @nogc
+private T max(T)(T a, T b) pure nothrow @nogc
 {
     return b < a ? a : b;
 }
@@ -755,3 +745,324 @@ pure nothrow @nogc unittest
     foreach (const n, const pow2; [1, 1, 2, 4, 4, 8, 8, 8, 8, 16])
         assert(nextpow2(n) == pow2);
 }
+//==============================================================================
+// Unittests
+//------------------------------------------------------------------------------
+
+unittest
+{
+    import std.experimental.allocator.mallocator;
+    auto aa = makeAA!(string, int)(Mallocator.instance, Mallocator.instance);
+
+    assert(aa.keys.length == 0);
+    assert(aa.values.length == 0);
+
+    aa["hello"] = 3;
+    assert(aa["hello"] == 3);
+    aa["hello"]++;
+    assert(aa["hello"] == 4);
+
+    assert(aa.length == 1);
+
+    string[] keys = aa.keys;
+    assert(keys.length == 1);
+    assert(keys[0] == "hello");
+
+    int[] values = aa.values;
+    assert(values.length == 1);
+    assert(values[0] == 4);
+
+    aa.rehash;
+    assert(aa.length == 1);
+    assert(aa["hello"] == 4);
+
+    aa["foo"] = 1;
+
+    {
+        //toString
+        import std.conv: to;
+        import std.algorithm.searching: canFind;
+        assert([`["hello" : 4, "foo" : 1]`, `["foo" : 1, "hello" : 4]`].canFind(aa.to!string));
+    }
+    aa["bar"] = 2;
+    aa["batz"] = 3;
+    assert(aa.keys.length == 4);
+    assert(aa.values.length == 4);
+    import std.array: array;
+    assert(aa.keys == aa.byKey.array);
+    assert(aa.values == aa.byValue.array);
+
+
+    foreach (a; aa.keys)
+    {
+        assert(a.length != 0);
+        assert(a.ptr != null);
+    }
+
+    foreach (v; aa.values)
+    {
+        assert(v != 0);
+    }
+    GCAllocator.instance.disposeAA(aa);
+}
+
+unittest  // Test for Issue 10381
+{
+    import std.experimental.allocator.mallocator;
+    //alias II = int[int];
+    //II aa1 = [0 : 1];
+    //II aa2 = [0 : 1];
+    //II aa3 = [0 : 2];
+    alias II = AA!(int, int, shared Mallocator);
+    auto aa1 = II(Mallocator.instance); aa1[0] = 1;
+    auto aa2 = II(Mallocator.instance); aa2[0] = 1;
+    auto aa3 = II(Mallocator.instance); aa3[0] = 2;
+    assert(aa1 == aa1); // Passes
+    assert(aa1 == aa2); // Passes
+    assert(aa1 != aa3); // Passes
+    //assert(typeid(II).equals(&aa1, &aa2));
+    //assert(!typeid(II).equals(&aa1, &aa3));
+}
+
+unittest
+{
+    import std.experimental.allocator.mallocator;
+
+    //string[int] key1 = [1 : "true", 2 : "false"];
+    //string[int] key2 = [1 : "false", 2 : "true"];
+    //string[int] key3;
+
+    alias IS = AA!(int, string, shared Mallocator);
+    auto key1 = IS(Mallocator.instance);
+    auto key2 = IS(Mallocator.instance);
+    auto key3 = IS(Mallocator.instance);
+    key1[1] = "true";
+    key1[2] = "false";
+    key2[2] = "true";
+    key2[1] = "false";
+
+    // AA lits create a larger hashtable
+    //int[string[int]] aa1 = [key1 : 100, key2 : 200, key3 : 300];
+    alias ISI = AA!(AA!(int, string, shared Mallocator), int, shared Mallocator);
+    auto aa1 = ISI.fromBuiltinAA([key1 : 100, key2 : 200, key3 : 300], Mallocator.instance);
+
+    //// Ensure consistent hash values are computed for key1
+    assert((key1 in aa1) !is null);
+    // Manually assigning to an empty AA creates a smaller hashtable
+    auto aa2 = ISI(Mallocator.instance);
+    aa2[key1] = 100;
+    aa2[key2] = 200;
+    aa2[key3] = 300;
+
+    assert(aa1 == aa2);
+
+    //// Ensure binary-independence of equal hash keys
+    auto key2a = IS(Mallocator.instance);
+    key2a[1] = "false";
+    key2a[2] = "true";
+
+    assert(aa1[key2a] == 200);
+}
+
+// Issue 9852
+unittest
+{
+    import std.experimental.allocator.mallocator;
+
+    // Original test case (revised, original assert was wrong)
+    //int[string] a;
+    auto a = AA!(string, int, shared Mallocator)(Mallocator.instance);
+    a["foo"] = 0;
+    a.remove("foo");
+    assert(a == null); // should not crash
+
+    auto b = AA!(string, int, shared Mallocator)(Mallocator.instance);
+    //assert(b is null);
+    assert(a == b); // should not deref null
+    assert(b == a); // ditto
+
+    auto c = AA!(string, int, shared Mallocator)(Mallocator.instance);
+    c["a"] = 1;
+    assert(a != c); // comparison with empty non-null AA
+    assert(c != a);
+    assert(b != c); // comparison with null AA
+    assert(c != b);
+}
+
+// Bugzilla 14104
+unittest
+{
+    import std.experimental.allocator.mallocator;
+    alias K = const(ubyte)*;
+    auto aa = AA!(K, size_t, shared Mallocator)(Mallocator.instance);
+    immutable key = cast(K)(cast(size_t) uint.max + 1);
+    aa[key] = 12;
+    assert(key in aa);
+}
+
+unittest
+{
+    import std.experimental.allocator.mallocator;
+    auto aa = AA!(int, int, shared Mallocator)(Mallocator.instance);
+
+    foreach (k, v; aa)
+        assert(false);
+    foreach (v; aa)
+        assert(false);
+    assert(aa.byKey.empty);
+    assert(aa.byValue.empty);
+    assert(aa.byKeyValue.empty);
+
+    size_t n;
+    //aa = [0 : 3, 1 : 4, 2 : 5];
+    aa[0] = 3;
+    aa[1] = 4;
+    aa[2] = 5;
+    assert(!aa.empty);
+    foreach (k, v; aa)
+    {
+        n += k;
+        assert(k >= 0 && k < 3);
+        assert(v >= 3 && v < 6);
+    }
+    assert(n == 3);
+    n = 0;
+
+    foreach (v; aa)
+    {
+        n += v;
+        assert(v >= 3 && v < 6);
+    }
+    assert(n == 12);
+
+    n = 0;
+    foreach (k, v; aa)
+    {
+        ++n;
+        break;
+    }
+    assert(n == 1);
+
+    n = 0;
+    foreach (v; aa)
+    {
+        ++n;
+        break;
+    }
+    assert(n == 1);
+
+    GCAllocator.instance.disposeAA(aa);
+}
+
+unittest
+{
+    import std.experimental.allocator.mallocator;
+    auto aa = AA!(int, int, shared Mallocator)(Mallocator.instance);
+    assert(!aa.remove(0));
+    aa[0] = 1;
+    assert(aa.remove(0));
+    assert(!aa.remove(0));
+    aa[1] = 2;
+    assert(!aa.remove(0));
+    assert(aa.remove(1));
+
+    assert(aa.length == 0);
+    assert(aa.byKey.empty);
+}
+
+// test zero sized value (hashset)
+unittest
+{
+    alias V = void[0];
+    import std.experimental.allocator.mallocator;
+    auto aa = AA!(int, V, shared Mallocator)(Mallocator.instance);
+    aa[0] = V.init;
+    assert(aa.length == 1);
+    assert(aa.byKey.front == 0);
+    assert(aa.byValue.front == V.init);
+    aa[1] = V.init;
+    assert(aa.length == 2);
+    aa[0] = V.init;
+    assert(aa.length == 2);
+    assert(aa.remove(0));
+    aa[0] = V.init;
+    assert(aa.length == 2);
+    //assert(aa == [0 : V.init, 1 : V.init]);
+    assert(aa[0] == V.init);
+    assert(aa[1] == V.init);
+}
+
+// test tombstone purging
+unittest
+{
+    import std.experimental.allocator.mallocator;
+    auto aa = AA!(int, int, shared Mallocator)(Mallocator.instance);
+    foreach (i; 0 .. 6)
+        aa[i] = i;
+    foreach (i; 0 .. 6)
+        assert(aa.remove(i));
+    foreach (i; 6 .. 10)
+        aa[i] = i;
+    assert(aa.length == 4);
+    foreach (i; 6 .. 10)
+        assert(i in aa);
+}
+
+//// test postblit for AA literals
+//unittest
+//{
+//    static struct T
+//    {
+//        static size_t postblit, dtor;
+//        this(this)
+//        {
+//            ++postblit;
+//        }
+
+//        ~this()
+//        {
+//            ++dtor;
+//        }
+//    }
+
+//    T t;
+//    import std.experimental.allocator.mallocator;
+//    auto aa1 = AA!(int, T, shared Mallocator)(Mallocator.instance);
+//    aa1[0] = t;
+//    aa1[1] = t;
+//    import std.conv;
+//    assert(T.dtor == 0 && T.postblit == 2, T.dtor.to!string~", "~T.postblit.to!string);
+//    aa1[0] = t;
+//    assert(T.dtor == 1 && T.postblit == 3);
+
+//    T.dtor = 0;
+//    T.postblit = 0;
+
+//    //auto aa2 = [0 : t, 1 : t, 0 : t]; // literal with duplicate key => value overwritten
+//    auto aa2 = AA!(int, T, shared Mallocator)(Mallocator.instance);
+//    aa2[0] = t;
+//    aa2[1] = t;
+//    aa2[0] = t;
+
+//    assert(T.dtor == 1 && T.postblit == 3);
+
+//    T.dtor = 0;
+//    T.postblit = 0;
+
+//    auto aa3 = AA!(T, int, shared Mallocator)(Mallocator.instance);
+//    aa3[t] = 0;
+//    assert(T.dtor == 0 && T.postblit == 1, T.dtor.to!string~", "~T.postblit.to!string);
+//    aa3[t] = 1;
+//    assert(T.dtor == 0 && T.postblit == 1);
+//    aa3.remove(t);
+//    assert(T.dtor == 0 && T.postblit == 1);
+//    aa3[t] = 2;
+//    assert(T.dtor == 0 && T.postblit == 2);
+
+//    // dtor will be called by GC finalizers
+//    aa1 = null;
+//    aa2 = null;
+//    aa3 = null;
+//    //GC.runFinalizers((cast(char*)(&entryDtor))[0 .. 1]);
+//    //assert(T.dtor == 6 && T.postblit == 2);
+//}
