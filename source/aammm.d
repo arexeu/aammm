@@ -425,37 +425,6 @@ struct AA(Key, Val, Allocator = shared GCAllocator)
         return p is null ? val : *p;
     }
 
-    ref Val getOrSet(scope Key key, lazy Val val)
-    {
-        // lazily alloc implementation
-        //if (impl is null)
-        //    impl = new Impl(INIT_NUM_BUCKETS);
-
-        // get hash and bucket for key
-        immutable hash = calcHash(key);
-
-        // found a value => assignment
-        if (auto p = impl.findSlotLookup(hash, key))
-            return p.entry.val;
-
-        auto p = findSlotInsert(hash);
-        if (p.deleted)
-            --deleted;
-        // check load factor and possibly grow
-        else if (++used * GROW_DEN > dim * GROW_NUM)
-        {
-            grow();
-            p = findSlotInsert(hash);
-            assert(p.empty);
-        }
-
-        // update search cache and allocate entry
-        firstUsed = min(firstUsed, cast(size_t)(p - buckets.ptr));
-        p.hash = hash;
-        p.entry = allocator.make!(Impl.Entry)(key, val);
-        return p.entry.val;
-    }
-
     /// foreach opApply over all values
     int opApply(int delegate(Val) dg)
     {
