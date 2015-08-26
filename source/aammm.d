@@ -80,6 +80,13 @@ struct AA(Key, Val, Allocator)
     import std.experimental.allocator: make, makeArray, dispose;
     //@disable this();
 
+    ///
+    @property nothrow @safe @nogc
+    bool isInitialized() const
+    {
+        return impl !is null;
+    }
+
     this(ref Allocator allocator, size_t sz = INIT_NUM_BUCKETS)
     {
         impl = new Impl(allocator, sz);
