@@ -9,3 +9,6 @@ __dummy.html
 aammm
 
 __test__library__
+benchmark
+
+*.a

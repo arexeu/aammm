@@ -11,7 +11,7 @@ The destructor is called by garbage collector (by default).
     import std.experimental.allocator.mallocator;
     import aammm;
 
-    auto a = AA!(string, int, shared Mallocator)(Mallocator.instance);
+    auto a = aa!(string, int)(Mallocator.instance);
     a["foo"] = 0;
     a.remove("foo"); //dealocates and disposes the entry
     assert(a == null); // should not crash

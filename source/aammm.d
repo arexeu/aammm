@@ -36,6 +36,13 @@ private
 
 enum INIT_NUM_BUCKETS = 8;
 
+/++
+Creates AA with GC-allocated internal implementation.
++/
+auto aa(Key, Val, Allocator)(ref Allocator allocator, size_t sz = INIT_NUM_BUCKETS)
+{
+    return AA!(Key, Val, Allocator)(allocator, sz);
+}
 
 /++
 Allocates internal AA implementation using `aaalocator`.
@@ -68,7 +75,7 @@ Params:
 
 See_also: `std.experimental.allocator.typed`
 +/
-struct AA(Key, Val, Allocator = shared GCAllocator)
+struct AA(Key, Val, Allocator)
 {
     import std.experimental.allocator: make, makeArray, dispose;
     //@disable this();
@@ -669,10 +676,21 @@ private:
 private size_t mix(size_t h) @safe pure nothrow @nogc
 {
     // final mix function of MurmurHash2
-    enum m = 0x5bd1e995;
-    h ^= h >> 13;
-    h *= m;
-    h ^= h >> 15;
+    static if(size_t.sizeof == 4)
+    {
+        enum m = 0x5bd1e995;
+        h ^= h >> 13;
+        h *= m;
+        h ^= h >> 15;
+    }
+    else
+    {
+        enum ulong m = 0xc6a4a7935bd1e995UL;
+        enum int r = 47;
+        h ^= h >> r;
+        h *= m;
+        h ^= h >> r;
+    }
     return h;
 }
 
@@ -691,7 +709,7 @@ unittest
 {
     import std.experimental.allocator.mallocator;
     //auto aa = AA!(int, int)(GCAllocator.instance);
-    auto aa = AA!(int, int, shared Mallocator)(Mallocator.instance);
+    auto aa = aa!(int, int)(Mallocator.instance);
     assert(aa.length == 0);
     aa[0] = 1;
     assert(aa.length == 1 && aa[0] == 1);
@@ -871,17 +889,17 @@ unittest
 
     // Original test case (revised, original assert was wrong)
     //int[string] a;
-    auto a = AA!(string, int, shared Mallocator)(Mallocator.instance);
+    auto a = aa!(string, int)(Mallocator.instance);
     a["foo"] = 0;
     a.remove("foo");
     assert(a == null); // should not crash
 
-    auto b = AA!(string, int, shared Mallocator)(Mallocator.instance);
+    auto b = aa!(string, int)(Mallocator.instance);
     //assert(b is null);
     assert(a == b); // should not deref null
     assert(b == a); // ditto
 
-    auto c = AA!(string, int, shared Mallocator)(Mallocator.instance);
+    auto c = aa!(string, int)(Mallocator.instance);
     c["a"] = 1;
     assert(a != c); // comparison with empty non-null AA
     assert(c != a);
@@ -894,8 +912,8 @@ unittest
 {
     import std.experimental.allocator.mallocator;
     alias K = const(ubyte)*;
-    auto aa = AA!(K, size_t, shared Mallocator)(Mallocator.instance);
-    immutable key = cast(K)(cast(size_t) uint.max + 1);
+    auto aa = aa!(K, size_t)(Mallocator.instance);
+    immutable key = cast(K)(cast(uint) uint.max + 1);
     aa[key] = 12;
     assert(key in aa);
 }
@@ -903,7 +921,7 @@ unittest
 unittest
 {
     import std.experimental.allocator.mallocator;
-    auto aa = AA!(int, int, shared Mallocator)(Mallocator.instance);
+    auto aa = aa!(int, int)(Mallocator.instance);
 
     foreach (k, v; aa)
         assert(false);
@@ -950,14 +968,12 @@ unittest
         break;
     }
     assert(n == 1);
-
-    GCAllocator.instance.disposeAA(aa);
 }
 
 unittest
 {
     import std.experimental.allocator.mallocator;
-    auto aa = AA!(int, int, shared Mallocator)(Mallocator.instance);
+    auto aa = aa!(int, int)(Mallocator.instance);
     assert(!aa.remove(0));
     aa[0] = 1;
     assert(aa.remove(0));
