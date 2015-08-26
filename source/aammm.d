@@ -80,6 +80,7 @@ struct AA(Key, Val, Allocator, Flag!"disposeEntries" disp = Flag!"disposeEntries
 {
     import std.experimental.allocator: make, makeArray, dispose;
     //@disable this();
+    alias Entry = Impl.Entry;
 
     ///
     @property nothrow @safe @nogc
