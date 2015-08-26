@@ -10,7 +10,7 @@ module aammm;
 import core.memory : GC;
 
 import std.experimental.allocator.gc_allocator : GCAllocator;
-
+import std.typecons: Flag;
 private
 {
     // grow threshold
@@ -72,10 +72,11 @@ Params:
     Key = key type
     Val = value type
     Allocator = allocator type
+    disp = dispose entries when `remove` or destructor is called.
 
 See_also: `std.experimental.allocator.typed`
 +/
-struct AA(Key, Val, Allocator)
+struct AA(Key, Val, Allocator, Flag!"disposeEntries" disp = Flag!"disposeEntries".yes)
 {
     import std.experimental.allocator: make, makeArray, dispose;
     //@disable this();
@@ -419,7 +420,8 @@ struct AA(Key, Val, Allocator)
         {
             // clear entry
             p.hash = HASH_DELETED;
-            allocator.dispose(p.entry);
+            static if(disp)
+                allocator.dispose(p.entry);
             p.entry = null;
 
             ++deleted;
@@ -558,9 +560,10 @@ private:
 
         ~this()
         {
-            foreach(b; buckets)
-                if(b.filled)
-                    allocator.dispose(b.entry);
+            static if(disp)
+                foreach(ref b; buckets)
+                    if(b.filled)
+                        allocator.dispose(b.entry);
             allocator.dispose(buckets);
         }
 
