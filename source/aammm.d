@@ -333,6 +333,21 @@ struct AA(Key, Val, Allocator, Flag!"disposeEntries" disp = Flag!"disposeEntries
         return empty;
     }
 
+    auto opAssign(typeof(null))
+    {
+        if(length)
+        {
+            used = deleted = 0;
+            static if(disp)
+                foreach(ref b; buckets)
+                    if(b.filled)
+                        allocator.dispose(b.entry);
+            allocator.dispose(buckets);
+            buckets = allocBuckets(INIT_NUM_BUCKETS);
+        }
+        return null;
+    }
+
     void toString(scope void delegate(const(char)[]) sink) const
     {
         sink("[");
@@ -904,6 +919,13 @@ unittest
     a["foo"] = 0;
     a.remove("foo");
     assert(a == null); // should not crash
+    a["foo"] = 0;
+    assert(a.length == 1);
+    a = null;
+    assert(a.length == 0);
+    a["bar"] = 0;
+    assert(a.length == 1);
+    a = null;
 
     auto b = aa!(string, int)(Mallocator.instance);
     //assert(b is null);
