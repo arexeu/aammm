@@ -474,7 +474,7 @@ struct AA(Key, Val, Allocator, Flag!"disposeEntries" disp = Flag!"disposeEntries
     }
 
     /// foreach opApply over all values
-    int opApply(int delegate(Val) dg)
+    int opApply(int delegate(ref Val) dg)
     {
         if (empty)
             return 0;
