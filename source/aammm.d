@@ -111,7 +111,7 @@ struct AA(Key, Val, Allocator, Flag!"disposeEntries" disp = Flag!"disposeEntries
         return this;
     }
 
-    Key[] keys() @property
+    Key[] keys()() @property
     {
         if(empty)
             return null;
@@ -127,7 +127,7 @@ struct AA(Key, Val, Allocator, Flag!"disposeEntries" disp = Flag!"disposeEntries
         return ret;
     }
 
-    Val[] values() @property
+    Val[] values()() @property
     {
         if(empty)
             return null;
@@ -191,7 +191,7 @@ struct AA(Key, Val, Allocator, Flag!"disposeEntries" disp = Flag!"disposeEntries
         return ByValue(R(this.impl));
     }
 
-    auto byValue()
+    auto byValue()()
     {
         alias R = Range!Impl;
         struct ByValue
@@ -207,7 +207,7 @@ struct AA(Key, Val, Allocator, Flag!"disposeEntries" disp = Flag!"disposeEntries
         return ByValue(R(this.impl));
     }
 
-    auto byKeyValue() const
+    auto byKeyValue()() const
     {
         alias R = Range!(const Impl);
         struct ByKeyValue
@@ -224,7 +224,7 @@ struct AA(Key, Val, Allocator, Flag!"disposeEntries" disp = Flag!"disposeEntries
         return ByKeyValue(R(this.impl));
     }
 
-    auto byKeyValue() 
+    auto byKeyValue()()
     {
         alias R = Range!Impl;
         struct ByKeyValue
@@ -348,7 +348,7 @@ struct AA(Key, Val, Allocator, Flag!"disposeEntries" disp = Flag!"disposeEntries
         return null;
     }
 
-    void toString(scope void delegate(const(char)[]) sink) const
+    void toString()(scope void delegate(const(char)[]) sink) const
     {
         sink("[");
         auto range = byKeyValue();
