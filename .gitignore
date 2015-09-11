@@ -12,3 +12,5 @@ __test__library__
 benchmark
 
 *.a
+
+project.sublime-workspace
