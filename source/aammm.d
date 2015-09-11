@@ -423,6 +423,17 @@ struct AA(Key, Val, Allocator, Flag!"disposeEntries" disp = Flag!"disposeEntries
         return null;
     }
 
+    const(Entry)* entry(in Key key) const @trusted
+    {
+        if (empty)
+            return null;
+
+        immutable hash = calcHash(key);
+        if (auto p = findSlotLookup(hash, key))
+            return p.entry;
+        return null;
+    }
+
     /++
     Removes entry from table and disposes it.
     +/
