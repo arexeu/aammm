@@ -1068,6 +1068,26 @@ unittest
         assert(i in aa);
 }
 
+//benchmark with freelist (shows identical time)
+unittest {
+    import std.datetime;
+    import std.experimental.allocator.mallocator;
+    import std.experimental.allocator.building_blocks.free_list;
+    alias Alloc = FreeList!(shared Mallocator, long.sizeof);
+    Alloc  alloc;
+    scope(exit) alloc.minimize;
+    auto m = aa!(long, long)(Mallocator.instance);
+    auto f = aa!(long, long)(alloc);
+    auto b = benchmark!(
+        { foreach(_; 0..10) {foreach(i; 0..10000L) m[i] = i; foreach(i; 0..10000L) m.remove(i); } },
+        { foreach(_; 0..10) {foreach(i; 0..10000L) f[i] = i; foreach(i; 0..10000L) f.remove(i); } },
+        )(1);
+    //import std.conv;
+    //import std.stdio;
+    //foreach(e; b)
+    //    e.to!Duration.writeln;
+}
+
 //// test postblit for AA literals
 //unittest
 //{

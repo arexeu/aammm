@@ -16,3 +16,14 @@ The destructor is called by garbage collector (by default).
     a.remove("foo"); //dealocates and disposes the entry
     assert(a == null); // should not crash
 ```
+
+#### Example with FreeList
+```D
+    import std.experimental.allocator.mallocator;
+    import std.experimental.allocator.building_blocks.free_list;
+    alias Alloc = FreeList!(shared Mallocator, long.sizeof);
+    Alloc  alloc;
+    scope(exit) alloc.minimize;
+    auto m = aa!(long, long)(alloc);
+    ...
+```
