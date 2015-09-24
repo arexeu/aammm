@@ -235,7 +235,14 @@ struct AA(Key, Val, Allocator, Flag!"disposeEntries" disp = Flag!"disposeEntries
             import std.typecons: Tuple;
             Tuple!(Key, "key", Val, "value") front() @property
             {
-                return typeof(return)(range.front.key, range.front.val);
+                static if(is(Val == void[0]))
+                {
+                    typeof(return) ret;
+                    ret.key = range.front.key;
+                    return ret;
+                }
+                else
+                    return typeof(return)(range.front.key, range.front.val);
             }
         }
         return ByKeyValue(R(this.impl));

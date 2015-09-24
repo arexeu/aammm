@@ -334,13 +334,13 @@ Returns $(D s) rounded up to the nearest power of 2.
 */
 package size_t roundUpToPowerOf2(size_t s)
 {
-    import std.meta : AliasSeq;
+    import std.typetuple : TypeTuple;
     assert(s <= (size_t.max >> 1) + 1);
     --s;
     static if (size_t.sizeof == 4)
-        alias Shifts = AliasSeq!(1, 2, 4, 8, 16);
+        alias Shifts = TypeTuple!(1, 2, 4, 8, 16);
     else
-        alias Shifts = AliasSeq!(1, 2, 4, 8, 16, 32);
+        alias Shifts = TypeTuple!(1, 2, 4, 8, 16, 32);
     foreach (i; Shifts)
     {
         s |= s >> i;
